@@ -1,0 +1,54 @@
+@model Db
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+    <title>数据库管理</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="~/css/site.css">
+</head>
+<body>
+<div class="container" style="margin-top: 20px;">
+    <h3>数据有效性验证</h3>
+    <hr>
+    <form asp-action="Check">
+        <input type="hidden" asp-for="Id">
+        <input type="hidden" asp-for="IsValid">
+        <div class="form-group row">
+            <label asp-for="Title" class="col-sm-2 col-form-label">数据库</label>
+            <div class="col-sm-9">
+                <input type="text" readonly class="form-control" asp-for="Title">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label asp-for="ConnectionString" class="col-sm-2 col-form-label">链接字符串</label>
+            <div class="col-sm-9">
+                <textarea class="form-control" rows="5" readonly asp-for="ConnectionString"></textarea>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label asp-for="ConnectionString" class="col-sm-2 col-form-label">是否有效</label>
+            <div class="col-sm-9">
+                @if (Model.IsValid)
+                {
+                    <input type="text" readonly class="form-control bg-success text-white" value="有效">
+                }
+                else
+                {
+                    <input type="text" readonly class="form-control bg-danger text-white" value="无效">
+                }
+            </div>
+        </div>
+        <hr>
+        <button type="submit" class="btn btn-primary mb-2">验证</button>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <a asp-action="Index">返回列表</a>
+    </form>
+</div>
+</body>
+</html>

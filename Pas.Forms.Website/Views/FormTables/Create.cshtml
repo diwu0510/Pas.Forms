@@ -1,0 +1,75 @@
+﻿@model FormTable
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "创建子表";
+}
+<form asp-action="Create">
+    <input type="hidden" asp-for="FormId" />
+    <h1 class="form-box-title">@ViewData["Title"]</h1>
+    <hr/>
+    <div class="form-box-fixed-container">
+        <div class="form-box">
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 绑定子表</div>
+                <div class="control">
+                    <select class="form-control" asp-for="DbTableId" asp-items="(List<SelectListItem>) ViewBag.Tables"></select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 子表字段</div>
+                <div class="control">
+                    <select class="form-control" asp-for="SubField"></select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 主表字段</div>
+                <div class="control">
+                    <select class="form-control" asp-for="MasterField" asp-items="(List<SelectListItem>) ViewBag.Fields">
+                        <option value="Id">[Id] ID</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-box-fixed-foot row content-right">
+        <input type="submit" value="提交" class="btn btn-blue"/>
+        <input id="btn-closeSelf" type="button" value="关闭" class="btn btn-red btn-close"/>
+    </div>
+</form>
+
+@section scripts {
+    <script src="~/lib/validator/validator.js"></script>
+    <script>
+        var table, originTable;
+
+        $(function () {
+            myUI.initForm({ pageType: "pop" });
+
+            table = $('#DbTableId').val();
+            getTableFields();
+            originTable = table;
+
+            $('#DbTableId').on('click', function () {
+                getTableFields();
+            });
+        });
+
+        function getTableFields() {
+            table = $('#DbTableId').val();
+            if (table === originTable) return;
+            originTable = table;
+
+            $.get('/DbCenter/DbFields', { table }, function (response) {
+                var html = '<option value="Id">[Id] ID</option>';
+                if (response && response.length > 0) {
+                    for (var i = 0; i < response.length; i++) {
+                        html += '<option value="' + response[i].field + '">' + '[' + response[i].field + '] ' + response[i].title + '</option>';
+                    }
+                }
+                $('#SubField').html(html);
+            });
+        }
+    </script>
+}

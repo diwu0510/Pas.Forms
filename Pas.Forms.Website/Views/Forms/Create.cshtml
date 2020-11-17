@@ -1,0 +1,41 @@
+@model Form
+@{ 
+    Layout = "_Layout";
+    ViewData["Title"] = "创建表单";
+}
+<form asp-action="Create">
+    <h1 class="form-box-title">@ViewData["Title"]</h1>
+    <hr />
+    <div class="form-box-fixed-container">
+        <div class="form-box">
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 绑定表</div>
+                <div class="control">
+                    <select class="form-control" asp-for="DbTableId" asp-items="(List<SelectListItem>)ViewBag.Dbs" isvalid="yes" checkexpession="NotNull"></select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 表单名</div>
+                <div class="control">
+                    <input type="text" asp-for="Title" isvalid="yes" checkexpession="NotNull">
+                </div>
+            </div>
+            <div class="row">
+                <div class="label"><span class="font-red">*</span> 备注</div>
+                <div class="control">
+                    <textarea rows="3" asp-for="Remark" isvalid="yes" checkexpession="NotNull"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-box-fixed-foot row content-right">
+        <input type="submit" value="提交" class="btn btn-blue" />
+        <input id="btn-closeSelf" type="button" value="关闭" class="btn btn-red btn-close" />
+    </div>
+</form>
+
+@section scripts {
+    <script src="~/lib/validator/validator.js"></script>
+    <script>myUI.initForm({ pageType: "pop" });</script>
+}

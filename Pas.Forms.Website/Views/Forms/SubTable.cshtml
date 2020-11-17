@@ -1,0 +1,52 @@
+﻿@model Form
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+    <title>子表管理</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="~/css/site.css">
+</head>
+<body>
+<div class="container container-main">
+    <h3>表单关联子表管理</h3>
+    <h4>当前表单：@Model.Title</h4>
+    <hr>
+    <div class="toolbar">
+        <a asp-action="CreateSubTable" asp-route-id="@Model.Id" class="btn btn-success">创建</a>
+    </div>
+    <div>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th style="width: 60px;"></th>
+                    <th>数据表</th>
+                    <th>表关联外键</th>
+                    <th>主表关联键</th>
+                    <th style="width: 120px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var map in Model.FormTables)
+            {
+                <tr>
+                    <td>@map.Id</td>
+                    <td>@map.DbTable</td>
+                    <td>@map.SubField</td>
+                    <td>@map.MasterField</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@map.Id">删除</a> |
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

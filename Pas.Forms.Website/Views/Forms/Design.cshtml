@@ -1,0 +1,484 @@
+﻿@model Form
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "表单设计";
+}
+@section Head
+{
+    <style>
+        .button-list li a {
+            display: block;
+            line-height: 30px;
+            margin: 3px;
+            border: 1px #dddd solid;
+            background-color: #eee;
+            text-align: center;
+            border-radius: 2px;
+        }
+
+        .form-list-1 {
+            width: 100%;
+        }
+
+            .form-list-1 td {
+                padding: 2px 0;
+            }
+
+        .form-box .col-6, .form-box .col-3, .form-box .col-12 {
+            border: 1px dashed transparent;
+            padding-right: 5px;
+        }
+
+        .form-box .active {
+            border: 1px dashed #d2b48c;
+            background: #fffcee;
+        }
+
+        .form-box {
+            padding-right: 10px;
+        }
+
+        .form-box .label {
+            position: relative;
+            display: block;
+            text-align: left;
+            margin: 5px 5px 0 5px;
+            line-height: 1.2;
+        }
+
+        .form-box .label a {
+            display: inline-block;
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            z-index: 10;
+        }
+
+        .form-box .control {
+            margin-left: 5px;
+        }
+        hr {
+            margin: 5px 0;
+        }
+    </style>
+}
+<div id="app">
+    <div class="container-col-group container-col-group-with-footer row border">
+        <div class="col-group-item col-3 border-r">
+            <div class="col-header">组件</div>
+            <div class="col-body" style="padding: 5px; background-color: #f6f6f6;">
+                <ul class="button-list row">
+                    <li class="col-6"><a href="javascript:;" v-on:click="createText"><i class="fa fa-font"></i> 单行文本</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createMulti"><i class="fa fa-navicon"></i> 多行文本</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createNumber"><i class="fa fa-superscript"></i> 数字</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createDate"><i class="fa fa-calendar"></i> 日期</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createCb"><i class="fa fa-check-square-o"></i> 复选框</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createSelect"><i class="fa fa-toggle-down"></i> 静态下拉框</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createDynamicSelect"><i class="fa fa-toggle-down"></i> 动态下拉框</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createImage"><i class="fa fa-user-o"></i> 图片</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createFile"><i class="fa fa-vcard"></i> 文件</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-group-item col-6">
+            <div class="col-header">表单组</div>
+            <div class="col-body" v-on:click="select2" style="padding-top: 0;">
+                <div class="notice" v-if="forms.length == 0">点击左侧按钮添加表单</div>
+                <div class="form-box">
+                    <div class="row" v-if="forms.length > 0">
+                        <div v-for="(form, index) in forms"
+                             v-dragging="{ item: form, list: forms, group: 'form' }"
+                             :key="form.name"
+                             v-bind:class="{active: selected && form.name==selected.name, 'col-6': form.span==2, 'col-12': form.span != 2}">
+                            <div v-on:click.stop="select(form)">
+                                <div class="label">
+                                    <span v-if="form.required" class="font-red">* </span>
+                                    {{form.label}} 
+                                    <a href="javascript:;" v-on:click.stop="del(index)" class="font-red" style="cursor:pointer">
+                                        <i class="fa fa-close font-red"></i>
+                                    </a>
+                                </div>
+                                <div class="control">
+                                    <select disabled="disabled" v-if="form.hasoptions"></select>
+                                    <input type="text" readonly="readonly" :placeholder="(form.placeholder ? form.placeholder : '')" v-else />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-group-item col-3 border-l">
+            <div class="col-header">配置</div>
+            <div class="col-body">
+                <div class="notice" v-if='!selected'>点击中部表单配置参数</div>
+                <table class="form-list-1" v-if="selected !== null">
+                    <tr>
+                        <td><span class="font-red">* </span>数据表</td>
+                        <td><input readonly="" type="text" value="@Model.DbTable.Name" /></td>
+                    </tr>
+                    <tr>
+                        <td><span class="font-red">* </span>绑定字段</td>
+                        <td>
+
+                            <select v-model="selected.field">
+                                <option value="">==选择==</option>
+                                @foreach (var field in Model.DbTable.Fields)
+                                {
+                                    <option value="@field.Field">[@field.Field] @field.Title</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="font-red">* </span>宽度</td>
+                        <td>
+                            <select v-model="selected.span" style="width: 100px;">
+                                <option value="2">1/2 行</option>
+                                <option value="1">1 行</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><hr /></td>
+                    </tr>
+                    <tr>
+                        <td><span class="font-red">* </span>表单名称</td>
+                        <td><input type="text" v-model="selected.name" /></td>
+                    </tr>
+                    <tr>
+                        <td><span class="font-red">* </span>显示文本</td>
+                        <td><input type="text" v-model="selected.label" /></td>
+                    </tr>
+                    <tr>
+                        <td>文本框提醒</td>
+                        <td><input type="text" v-model="selected.placeholder" /></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><hr /></td>
+                    </tr>
+                    <tr class="form-group">
+                        <td>是否必填</td>
+                        <td>
+                            <input type="checkbox" v-model="selected.required" />
+                            <label>是必填项</label>
+                        </td>
+                    </tr>
+                    <tr class="form-group">
+                        <td>是否只读</td>
+                        <td>
+                            <input type="checkbox" v-model="selected.disabled" />
+                            <label>只读</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <hr />
+                        </td>
+                    </tr>
+                    <tr v-if="selected.hasoptions">
+                        <td colspan="2">
+                            <h5 class="col-title-1">选择项</h5>
+                            <hr />
+                            <table style="width: 100%;">
+                                <tr v-for="(item, index) in selected.options">
+                                    <td>
+                                        <input type="text"
+                                               :value="item"
+                                               @@input="$set(selected.options, index, $event.target.value)" />
+                                    </td>
+                                    <td class="butts">
+                                        <a href="javascript:;" v-on:click='addItem(index)' class="font-success"><i class="fa fa-plus"></i></a>
+                                        &nbsp;&nbsp;
+                                        <a href="javascript:;" v-on:click='delItem(index)' class="font-red"><i class="fa fa-close"></i></a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr v-if="selected.dynamic">
+                        <td colspan="2">
+                            <h5 class="col-title-1">动态数据设置</h5>
+                            <hr />
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="width: 90px;">数据源类型</td>
+                                    <td>
+                                        <select v-model="selected.sourceType">
+                                            <option value="1">站内数据源</option>
+                                            <option value="2">外部接口</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>value字段</td>
+                                    <td><input type="text" v-model="selected.valueField" /></td>
+                                </tr>
+                                <tr>
+                                    <td>text字段</td>
+                                    <td><input type="text" v-model="selected.textField" /></td>
+                                </tr>
+                                <tr>
+                                    <td>接口地址</td>
+                                    <td><input type="text" v-model="selected.api" /></td>
+                                </tr>
+                                <tr>
+                                    <td>请求参数</td>
+                                    <td>
+                                        <button v-on:click="addParam(selected)">添加参数</button>
+                                    </td>
+                                </tr>
+                                <tr v-for="(param, idx2) in selected.params">
+                                    <td colspan="2">
+                                        <div class="row">
+                                            <div class="col-5">
+                                                <input type="text" placeholder="参数" v-model="param.key" />
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="text" placeholder="值" v-model="param.value" />
+                                            </div>
+                                            <div class="col-1 text-center">
+                                                <a href="javascript:;" v-on:click='delParam(idx2)' class="font-red" style="margin: 0 10px;">
+                                                    <i class="fa fa-close"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/vue/vue.min.js"></script>
+    <script src="~/lib/vue-form-editor/utils/vue-form-validator.js"></script>
+    <script src="~/lib/vue-form-editor/components/vue-form-view.js"></script>
+    <script src="~/lib/vue-form-editor/vue-dragging/vue-dragging.es5.js"></script>
+    <script>
+      Vue.use(VueDragging);
+		var app = new Vue({
+			el: '#app',
+			mounted: function () {
+			},
+			data: {
+				token: null,
+				forms: [],
+				selected: null,
+				formIdx: 0,
+				showConfig: false
+			},
+			methods: {
+				createText: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'text',
+						name: 'form_' + ++this.formIdx,
+						label: '单行文本',
+						required: true,
+						disabled: false,
+						placeholder: '输入一段文字',
+						minlength: 0,
+						maxlength: 100
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createNumber: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'number',
+						name: 'form_' + ++this.formIdx,
+						label: '数字',
+						required: true,
+						disabled: false,
+						placeholder: '请输入一个数字',
+						min: 0,
+						max: 100000
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createDate: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'date',
+						name: 'form_' + ++this.formIdx,
+						label: '日期',
+						placeholder: '可选：today | now',
+						required: true,
+						disabled: false,
+						default: ''
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createSelect: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'dropdown',
+						name: 'form_' + ++this.formIdx,
+						label: '下拉框',
+						required: true,
+						disabled: false,
+						hasoptions: true,
+						options: ['项目一']
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createCb: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'checkboxgroup',
+						name: 'form_' + ++this.formIdx,
+						label: '复选框',
+						required: true,
+						disabled: false,
+						hasoptions: true,
+						options: ['项目一']
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createDynamicSelect: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'dynamicDropdown',
+						name: 'form_' + ++this.formIdx,
+						label: '动态下拉框',
+						required: true,
+						disabled: false,
+						dynamic: true,
+						api: '',
+						hasParams: false,
+						params: [],
+						auto: true,
+						valueField: 'id',
+						textField: 'text',
+						sourceType: "2"
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createMulti: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						type: 'textarea',
+						name: 'form_' + ++this.formIdx,
+						label: '多行文本',
+						placeholder: '可输入多行文本',
+						required: true,
+						disabled: false,
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createImage: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						label: '图片',
+						name: 'form_' + ++this.formIdx,
+						placeholder: '',
+						required: true,
+						type: 'image'
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				createFile: function () {
+                    var form = {
+                        table: '',
+                        field: '',
+                        span: 2,
+						label: '文件',
+						name: 'form_' + ++this.formIdx,
+						placeholder: '',
+						required: true,
+						type: 'file'
+					}
+					this.forms.push(form);
+					this.select(form);
+				},
+				select: function (form) {
+					this.selected = form;
+				},
+                select2: function() {
+                    this.selected = null;
+                },
+				config: function(form) {
+					this.showConfig = true;
+				},
+				addItem: function (index) {
+					if (this.selected) {
+						this.selected.options.splice(index + 1, 0, '');
+					}
+				},
+				delItem: function (idx) {
+					if (this.selected) {
+						if (this.selected.options.length <= 1) {
+							return alert('必须保留至少一个选项');
+						} else {
+							this.selected.options.splice(idx, 1);
+						}
+					}
+				},
+				del: function (idx) {
+                    console.log(idx)
+					if (this.forms[idx] == this.selected) {
+						this.selected = null;
+					}
+					this.forms.splice(idx, 1);
+				},
+				save: function () {
+					var param = { __RequestVerificationToken: this.token, Id: "@Model.Id", forms: this.forms };
+					$.post('/WF/Workflow/SetForm', param, function (data) {
+						if (data.Code == 200) {
+							location.href = "/WF/Workflow";
+						} else {
+							alert(data.Message);
+						}
+					});
+				},
+				addParam: function (form) {
+					form.params.push({ key: '', value: '' });
+				},
+				delParam: function (idx) {
+					if (this.selected && this.selected.params) {
+						this.selected.params.splice(idx, 1);
+					}
+				}
+			}
+		});
+		function generateUUID() {
+			var d = new Date().getTime();
+			var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+				var r = (d + Math.random() * 16) % 16 | 0;
+				d = Math.floor(d / 16);
+				return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+			});
+			return uuid;
+		}
+    </script>
+}

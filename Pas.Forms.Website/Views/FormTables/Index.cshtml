@@ -1,0 +1,84 @@
+﻿@model Form
+
+@{ 
+    ViewData["Title"] = "子表管理";
+    Layout = "_Layout";
+}
+<div class="container" style="margin-top: 20px;">
+    <h3 class="page-title">@Model.Title</h3>
+    <hr />
+    <div class="container-fluid full-height">
+        <div id="container-header">
+            <form id="form" onsubmit="return false;">
+                <div class="toolbar row">
+                    <div class="col-6">
+                        <a id="btn-create"
+                           href="javascript:;"
+                           data-action="/FormTables/Create?formid=@Model.Id"
+                           data-type="pop"
+                           data-options='{"title": "创建", "width": 560, "height": 400, "before": null}'
+                           class="btn btn-green btn-customer"><i class="fa fa-plus-square"></i>添加</a>
+                        <a id="btn-delete"
+                           href="javascript:;"
+                           data-action="/FormTables/Delete"
+                           data-type="ajax"
+                           data-grid="grid"
+                           data-options='{"msg": "确认操作？", "before": null}'
+                           class="btn btn-red btn-customer"><i class="fa fa-trash-o"></i>删除</a>
+                        <a id="btn-refresh" href="javascript:;" class="btn btn-default" onclick="window.grid.reload();"><i class="fa fa-refresh"></i> 刷新</a>
+                    </div>
+                    <div class="col-6 content-right">
+                        <label style="font-size: 14px;"><b>主表： @Model.DbTable.Title【@Model.DbTable.Name】</b></label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div id="list" class="grid-box"></div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/lib/myui/myGridNoFixed.v2.js"></script>
+    <script>
+        var grid = $('#list').MyGrid({
+            api: '/FormTables/Get/@Model.Id',
+            columns: [
+                { title: '编号', type: 'indexNum', width: 50 },
+                {
+                    title: '子表',
+                    do: function(item) {
+                        return item.dbTable.title;
+                    },
+                    width: 200
+                },
+                { title: '子表字段', do: function(item) {
+                    return item.dbTable.name + '.[' + item.subField + ']';
+                }, width: 300 },
+                {
+                    title: '关联主表字段',
+                    do: function(item) {
+                        return '@Model.DbTable.Name' + '.[' + item.masterField + ']';
+                    }
+                }
+            ],
+            keyColumn: 'id',
+            height: function() {
+                var h = $(window).height() - $('#container-header').height() - 160;
+                return h;
+            },
+            pageSize: 20,
+            dataConvertFn: function(source) { return source; },
+            renderCompleteFn: null,
+            filterFn: function() { return $('#form').serialize(); },
+            ajaxErrorFn: null,
+            ajaxBeforeSendFn: null,
+            click: function(item) {},
+            dblClick: function(item) { $('#btn-edit').trigger('click'); },
+            multi: false,
+            pager: false,
+            auto: true
+        });
+    </script>
+}
+

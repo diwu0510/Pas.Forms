@@ -1,0 +1,275 @@
+@model DbTable
+
+@{ Layout = "_Layout";
+                ViewData["Title"] = "【" + Model.Title + "】" + "字段管理"; }
+@section Head
+{
+    <style>
+        .whiteyellow td {
+            background-color: #fffccc;
+        }
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+}
+<div id="app" cloak>
+    <div class="row container-col-group bg-white border">
+        <div class="col-group-item col-8">
+            <div class="col-header">字段</div>
+            <div class="col-body">
+                <h3 class="page-title">@ViewData["Title"]</h3>
+                <hr />
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;"></th>
+                            <th>列名</th>
+                            <th>标题</th>
+                            <th style="width: 80px;">类型</th>
+                            <th style="width: 80px;">创建忽略</th>
+                            <th style="width: 80px;">修改忽略</th>
+                            <th>关联表</th>
+                            <th>关联字段</th>
+                            <th style="width: 120px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(row, idx) in list" :key="row.id" v-on:click="select(row)" v-bind:class="{ whiteyellow: model.id==row.id }">
+                            <td>{{row.id}}</td>
+                            <td>{{row.field}}</td>
+                            <td>{{row.title}}</td>
+                            <td>{{row.type}}</td>
+                            <td>{{row.insertIgnore ? "是" : "否"}}</td>
+                            <td>{{row.updateIgnore ? "是" : "否"}}</td>
+                            <td>{{row.foreignTable}}</td>
+                            <td>{{row.foreignField}}</td>
+                            <td>
+                                <a href="javascript:;" v-on:click="del(row.id)">删除</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-group-item col-4 border-l">
+            <div class="col-header">设置</div>
+            <div class="col-body">
+                <div class="form-box">
+                    <div class="row">
+                        <div class="label"><span class="text-red">*</span> 字段标题</div>
+                        <div class="control">
+                            <input type="text" v-model="model.title" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="label"><span class="text-red">*</span> 字段名称</div>
+                        <div class="control">
+                            <input type="text" v-model="model.field" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="label"><span class="text-red">*</span> 数据类型</div>
+                        <div class="control">
+                            <select class="form-control" v-model="model.type">
+                                <option v-for="(type, idx) in types" :value="type" :key="idx">{{type}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="label">操作时配置</div>
+                        <div class="control">
+                            <label><input type="checkbox" v-model="model.insertIgnore">插入时忽略</label>
+                            <label><input type="checkbox" v-model="model.updateIgnore">修改时忽略</label>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="label">关联配置</div>
+                        <div class="control">
+                            <label><input type="checkbox" v-model="model.isForeignKey" v-on:click="setLink">关联其他表</label>
+                        </div>
+                    </div>
+                    <div v-show="model.isForeignKey">
+                        <div class="row">
+                            <div class="label">关联表</div>
+                            <div class="control">
+                                <select class="form-control" v-model="model.foreignTable">
+                                    <option value="">请选择</option>
+                                    <option v-for="(db, idx) in dbs" :value="db.name" :key="db.id">{{db.title}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="label">关联字段</div>
+                            <div class="control">
+                                <select class="form-control" v-model="model.foreignField">
+                                    <option value="">请选择</option>
+                                    <option value="Id">ID</option>
+                                    <option v-for="(field, idx) in fields" :value="field.field" :key="field.id">{{field.title}}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <div class="content-center">
+                    <button class="btn btn-success" v-on:click="submit">提交</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/lib/vue/vue.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                model: {
+                    id: 0,
+                    title: '',
+                    field: '',
+                    type: '',
+                    dbTableId: @Model.Id,
+                    insertIgnore: false,
+                    updateIgnore: false,
+                    isForeignKey: false,
+                    foreignTable: '',
+                    foreignField: ''
+                },
+                types: ['string', 'number', 'datetime'],
+                dbs: [],
+                list: []
+            },
+            mounted: function() {
+                this.getFields();
+                this.getTables();
+            },
+            methods: {
+                getOriginModel() {
+                    return {
+                        id: 0,
+                        title: '',
+                        field: '',
+                        type: '',
+                        dbTableId: @Model.Id,
+                        insertIgnore: false,
+                        updateIgnore: false,
+                        isForeignKey: false,
+                        foreignTable: '',
+                        foreignField: ''
+                    }
+                },
+                create() {
+                    this.model = this.getOriginModel();
+                },
+                getFields() {
+                    var that = this;
+                    $.get('/dbcenter/dbfields',
+                        { table: @Model.Id },
+                        function(response) {
+                            that.list = response;
+                        });
+                },
+                getTables() {
+                    var that = this;
+                    $.get('/dbcenter/dbtables',
+                        { id: @Model.DbId, fields: true },
+                        function(response) {
+                            that.dbs = response;
+                        });
+                },
+                validate() {
+                    var result = { valid: true, err: '' };
+                    if (!this.model) return { valid: false, err: '当前数据为空' };
+                    if (!this.model.title || this.model.title === '') {
+                        return { valid: false, err: '标题不能为空' };
+                    }
+                    if (!this.model.field || this.model.field === '') {
+                        return { valid: false, err: '字段名不能为空' };
+                    }
+                    if (!this.model.type || this.model.type === '') {
+                        return { valid: false, err: '字段类型不能为空' };
+                    }
+                    if (this.model.isForeignKey) {
+                        if (!this.model.foreignTable) {
+                            return { valid: false, err: '关联表不能为空' };
+                        }
+                        if (!this.model.foreignField) {
+                            return { valid: false, err: '关联字段不能为空' };
+                        }
+                    }
+                    return result;
+                },
+                submit() {
+                    var that = this;
+                    var result = this.validate();
+                    if (!result.valid) return alert(result.err);
+
+                    if (this.model.id === 0) {
+                        $.post('/dbfields/create',
+                            this.model,
+                            function(response) {
+                                if (response.code === 200) {
+                                    that.getFields();
+                                    that.model = that.getOriginModel();
+                                    layer.alert('操作成功', { icon: 6 });
+                                } else {
+                                    layer.alert('操作失败', { icon: 2 });
+                                }
+                            });
+                    } else {
+                        $.post('/dbfields/edit/' + this.model.id,
+                            this.model,
+                            function(response) {
+                                if (response.code === 200) {
+                                    that.getFields();
+                                    that.model = that.getOriginModel();
+                                    layer.alert('操作成功', { icon: 6 });
+                                } else {
+                                    layer.alert('操作失败', { icon: 2 });
+                                }
+                            });
+                    }
+                },
+                select(row) {
+                    this.model = {
+                        id: row.id,
+                        title: row.title,
+                        field: row.field,
+                        type: row.type,
+                        dbTableId: row.dbTableId,
+                        insertIgnore: row.insertIgnore,
+                        updateIgnore: row.updateIgnore,
+                        isForeignKey: row.isForeignKey,
+                        foreignTable: row.foreignTable,
+                        foreignField: row.foreignField
+                    };
+                },
+                setLink() {
+                    if (this.model.isForeignKey) {
+                        this.model.foreignTable = '';
+                        this.model.foreignField = '';
+                    }
+                }
+            },
+            computed: {
+                fields() {
+                    var that = this;
+                    if (this.model.foreignTable) {
+                        for (let i = 0; i < this.dbs.length; i++) {
+                            if (this.dbs[i].name === that.model.foreignTable) {
+                                return this.dbs[i].fields;
+                            }
+                        }
+                    }
+                    return [];
+                }
+            }
+        });
+    </script>
+}
