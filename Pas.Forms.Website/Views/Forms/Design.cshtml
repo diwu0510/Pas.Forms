@@ -68,11 +68,13 @@
             <div class="col-header">组件</div>
             <div class="col-body" style="padding: 5px; background-color: #f6f6f6;">
                 <ul class="button-list row">
+                    <li class="col-6"><a href="javascript:;" v-on:click="createHide"><i class="fa fa-check-square-o"></i> 隐藏域</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createText"><i class="fa fa-font"></i> 单行文本</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createMulti"><i class="fa fa-navicon"></i> 多行文本</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createNumber"><i class="fa fa-superscript"></i> 数字</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createDate"><i class="fa fa-calendar"></i> 日期</a></li>
-                    <li class="col-6"><a href="javascript:;" v-on:click="createCb"><i class="fa fa-check-square-o"></i> 复选框</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createBool"><i class="fa fa-check-square-o"></i> 是/否 选择框</a></li>
+                    <li class="col-6"><a href="javascript:;" v-on:click="createCheckboxList"><i class="fa fa-check-square-o"></i> 复选框</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createSelect"><i class="fa fa-toggle-down"></i> 静态下拉框</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createDynamicSelect"><i class="fa fa-toggle-down"></i> 动态下拉框</a></li>
                     <li class="col-6"><a href="javascript:;" v-on:click="createImage"><i class="fa fa-user-o"></i> 图片</a></li>
@@ -115,7 +117,7 @@
                 <table class="form-list-1" v-if="selected !== null">
                     <tr>
                         <td><span class="font-red">* </span>数据表</td>
-                        <td><input readonly="" type="text" value="@Model.DbTable.Name" /></td>
+                        <td><input readonly="" type="text" v-model="selected.table" /></td>
                     </tr>
                     <tr>
                         <td><span class="font-red">* </span>绑定字段</td>
@@ -130,7 +132,7 @@
                             </select>
                         </td>
                     </tr>
-                    <tr>
+                    <tr v-show="selected.type!=='hide'">
                         <td><span class="font-red">* </span>宽度</td>
                         <td>
                             <select v-model="selected.span" style="width: 100px;">
@@ -150,7 +152,7 @@
                         <td><span class="font-red">* </span>显示文本</td>
                         <td><input type="text" v-model="selected.label" /></td>
                     </tr>
-                    <tr>
+                    <tr v-show="selected.type==='text'||selected.type==='textarea'">
                         <td>文本框提醒</td>
                         <td><input type="text" v-model="selected.placeholder" /></td>
                     </tr>
@@ -196,7 +198,7 @@
                             </table>
                         </td>
                     </tr>
-                    <tr v-if="selected.dynamic">
+                    <tr v-if="selected.type==='dynamicDropdown'">
                         <td colspan="2">
                             <h5 class="col-title-1">动态数据设置</h5>
                             <hr />
@@ -207,7 +209,7 @@
                                         <select v-model="selected.sourceType">
                                             <option value="1">站内数据源</option>
                                             <option value="2">外部接口</option>
-                                        </select>
+                                        </select>----------------------------------------------------------------------------------------------------- 
                                     </td>
                                 </tr>
                                 <tr>
@@ -245,10 +247,44 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td colspan="2"><hr /></td>
+                                </tr>
+                                <tr>
+                                    <td>数据源映射</td>
+                                    <td>
+                                        <button v-on:click="addMap(selected)">添加映射</button>
+                                    </td>
+                                </tr>
+                                <tr v-for="(map, idx2) in selected.maps">
+                                    <td colspan="2">
+                                        <div class="row">
+                                            <div class="col-5">
+                                                <input type="text" placeholder="参数" v-model="map.key" />
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="text" placeholder="值" v-model="map.value" />
+                                            </div>
+                                            <div class="col-1 text-center">
+                                                <a href="javascript:;" v-on:click='delMap(idx2)' class="font-red" style="margin: 0 10px;">
+                                                    <i class="fa fa-close"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                             </table>
                         </td>
                     </tr>
                 </table>
+            </div>
+        </div>
+    </div>
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; height: 50px;">
+        <div class="row">
+            <div class="col-6"></div>
+            <div class="col-6 text-right">
+                <button v-on:click="save">提交</button>
             </div>
         </div>
     </div>
@@ -261,224 +297,260 @@
     <script src="~/lib/vue-form-editor/components/vue-form-view.js"></script>
     <script src="~/lib/vue-form-editor/vue-dragging/vue-dragging.es5.js"></script>
     <script>
-      Vue.use(VueDragging);
-		var app = new Vue({
-			el: '#app',
-			mounted: function () {
-			},
-			data: {
-				token: null,
-				forms: [],
-				selected: null,
-				formIdx: 0,
-				showConfig: false
-			},
-			methods: {
-				createText: function () {
+        @{
+            var json = string.IsNullOrWhiteSpace(Model.Fields) ? "[]" : Model.Fields;
+        }
+        Vue.use(VueDragging);
+        var app = new Vue({
+            el: '#app',
+            mounted: function () {
+            },
+            data: {
+                id: @Model.Id,
+                token: null,
+                forms: eval(@Html.Raw(json)),
+                selected: null,
+                formIdx: 0,
+                showConfig: false
+            },
+            methods: {
+                createHide: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
+                        field: '',
+                        type: 'hide',
+                        name: 'form_' + ++this.formIdx,
+                        label: '隐藏域',
+                        required: true
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createBool: function () {
+                    var form = {
+                        table: '@Model.DbTable.Name',
+                        field: '',
+                        type: 'boolean',
+                        name: 'form_' + ++this.formIdx,
+                        label: '是/否 选择框',
+                        required: true,
+                        span: 2
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createText: function () {
+                    var form = {
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'text',
-						name: 'form_' + ++this.formIdx,
-						label: '单行文本',
-						required: true,
-						disabled: false,
-						placeholder: '输入一段文字',
-						minlength: 0,
-						maxlength: 100
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createNumber: function () {
+                        type: 'text',
+                        name: 'form_' + ++this.formIdx,
+                        label: '单行文本',
+                        required: true,
+                        disabled: false,
+                        placeholder: '输入一段文字',
+                        minlength: 0,
+                        maxlength: 100
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createNumber: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'number',
-						name: 'form_' + ++this.formIdx,
-						label: '数字',
-						required: true,
-						disabled: false,
-						placeholder: '请输入一个数字',
-						min: 0,
-						max: 100000
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createDate: function () {
+                        type: 'number',
+                        name: 'form_' + ++this.formIdx,
+                        label: '数字',
+                        required: true,
+                        disabled: false,
+                        placeholder: '请输入一个数字',
+                        min: 0,
+                        max: 100000
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createDate: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'date',
-						name: 'form_' + ++this.formIdx,
-						label: '日期',
-						placeholder: '可选：today | now',
-						required: true,
-						disabled: false,
-						default: ''
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createSelect: function () {
+                        type: 'date',
+                        name: 'form_' + ++this.formIdx,
+                        label: '日期',
+                        placeholder: '可选：today | now',
+                        required: true,
+                        disabled: false,
+                        default: ''
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createSelect: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'dropdown',
-						name: 'form_' + ++this.formIdx,
-						label: '下拉框',
-						required: true,
-						disabled: false,
-						hasoptions: true,
-						options: ['项目一']
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createCb: function () {
+                        type: 'dropdown',
+                        name: 'form_' + ++this.formIdx,
+                        label: '下拉框',
+                        required: true,
+                        disabled: false,
+                        options: ['项目一']
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createCheckboxList: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'checkboxgroup',
-						name: 'form_' + ++this.formIdx,
-						label: '复选框',
-						required: true,
-						disabled: false,
-						hasoptions: true,
-						options: ['项目一']
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createDynamicSelect: function () {
+                        type: 'checkboxgroup',
+                        name: 'form_' + ++this.formIdx,
+                        label: '复选框',
+                        required: true,
+                        disabled: false,
+                        options: ['项目一']
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createDynamicSelect: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'dynamicDropdown',
-						name: 'form_' + ++this.formIdx,
-						label: '动态下拉框',
-						required: true,
-						disabled: false,
-						dynamic: true,
-						api: '',
-						hasParams: false,
-						params: [],
-						auto: true,
-						valueField: 'id',
-						textField: 'text',
-						sourceType: "2"
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createMulti: function () {
+                        type: 'dynamicDropdown',
+                        name: 'form_' + ++this.formIdx,
+                        label: '动态下拉框',
+                        required: true,
+                        disabled: false,
+                        dynamic: true,
+                        api: '',
+                        hasParams: false,
+                        params: [],
+                        maps: [],
+                        auto: true,
+                        valueField: 'id',
+                        textField: 'text',
+                        sourceType: "2"
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createMulti: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						type: 'textarea',
-						name: 'form_' + ++this.formIdx,
-						label: '多行文本',
-						placeholder: '可输入多行文本',
-						required: true,
-						disabled: false,
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createImage: function () {
+                        type: 'textarea',
+                        name: 'form_' + ++this.formIdx,
+                        label: '多行文本',
+                        placeholder: '可输入多行文本',
+                        required: true,
+                        disabled: false,
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createImage: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						label: '图片',
-						name: 'form_' + ++this.formIdx,
-						placeholder: '',
-						required: true,
-						type: 'image'
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				createFile: function () {
+                        label: '图片',
+                        name: 'form_' + ++this.formIdx,
+                        placeholder: '',
+                        required: true,
+                        type: 'image'
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                createFile: function () {
                     var form = {
-                        table: '',
+                        table: '@Model.DbTable.Name',
                         field: '',
                         span: 2,
-						label: '文件',
-						name: 'form_' + ++this.formIdx,
-						placeholder: '',
-						required: true,
-						type: 'file'
-					}
-					this.forms.push(form);
-					this.select(form);
-				},
-				select: function (form) {
-					this.selected = form;
-				},
+                        label: '文件',
+                        name: 'form_' + ++this.formIdx,
+                        placeholder: '',
+                        required: true,
+                        type: 'file'
+                    }
+                    this.forms.push(form);
+                    this.select(form);
+                },
+                select: function (form) {
+                    this.selected = form;
+                },
                 select2: function() {
                     this.selected = null;
                 },
-				config: function(form) {
-					this.showConfig = true;
-				},
-				addItem: function (index) {
-					if (this.selected) {
-						this.selected.options.splice(index + 1, 0, '');
-					}
-				},
-				delItem: function (idx) {
-					if (this.selected) {
-						if (this.selected.options.length <= 1) {
-							return alert('必须保留至少一个选项');
-						} else {
-							this.selected.options.splice(idx, 1);
-						}
-					}
-				},
-				del: function (idx) {
-                    console.log(idx)
-					if (this.forms[idx] == this.selected) {
-						this.selected = null;
-					}
-					this.forms.splice(idx, 1);
-				},
-				save: function () {
-					var param = { __RequestVerificationToken: this.token, Id: "@Model.Id", forms: this.forms };
-					$.post('/WF/Workflow/SetForm', param, function (data) {
-						if (data.Code == 200) {
-							location.href = "/WF/Workflow";
-						} else {
-							alert(data.Message);
-						}
-					});
-				},
-				addParam: function (form) {
-					form.params.push({ key: '', value: '' });
-				},
-				delParam: function (idx) {
-					if (this.selected && this.selected.params) {
-						this.selected.params.splice(idx, 1);
-					}
-				}
-			}
-		});
-		function generateUUID() {
-			var d = new Date().getTime();
-			var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-				var r = (d + Math.random() * 16) % 16 | 0;
-				d = Math.floor(d / 16);
-				return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-			});
-			return uuid;
-		}
+                config: function(form) {
+                    this.showConfig = true;
+                },
+                addItem: function (index) {
+                    if (this.selected) {
+                        this.selected.options.splice(index + 1, 0, '');
+                    }
+                },
+                delItem: function (idx) {
+                    if (this.selected) {
+                        if (this.selected.options.length <= 1) {
+                            return alert('必须保留至少一个选项');
+                        } else {
+                            this.selected.options.splice(idx, 1);
+                        }
+                    }
+                },
+                del: function (idx) {
+                    if (this.forms[idx] === this.selected) {
+                        this.selected = null;
+                    }
+                    this.forms.splice(idx, 1);
+                },
+                save: function () {
+                    var that = this;
+                    var param = { __RequestVerificationToken: this.token, fields: this.forms };
+                    $.post('/forms/design/' + that.id, param, function (data) {
+                        if (data.code === 200) {
+                            location.href = "/forms";
+                        } else {
+                            alert(data.Message);
+                        }
+                    });
+                },
+                addParam: function (form) {
+                    form.params.push({ key: '', value: '' });
+                },
+                delParam: function (idx) {
+                    if (this.selected && this.selected.params) {
+                        this.selected.params.splice(idx, 1);
+                    }
+                },
+                addMap: function (form) {
+                    form.maps.push({ key: '', value: '' });
+                },
+                delMap: function (idx) {
+                    if (this.selected && this.selected.maps) {
+                        this.selected.maps.splice(idx, 1);
+                    }
+                }
+            }
+        });
+        function generateUUID() {
+            var d = new Date().getTime();
+            var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = (d + Math.random() * 16) % 16 | 0;
+                d = Math.floor(d / 16);
+                return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+            return uuid;
+        }
     </script>
 }

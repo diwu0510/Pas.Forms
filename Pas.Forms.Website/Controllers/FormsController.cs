@@ -6,6 +6,8 @@ using Pas.Forms.Website.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Pas.Forms.Website.Controllers
 {
@@ -162,9 +164,18 @@ namespace Pas.Forms.Website.Controllers
         }
 
         [HttpPost]
-        public Result Design(int id, List<FormField> fileds) 
+        public Result Design(int id, List<FormField2> fields)
         {
-            return default;
+            var form = _db.Find<Form>(id);
+            if (form == null)
+            {
+                return ResultUtil.NotFound();
+            }
+
+            var json = JsonConvert.SerializeObject(fields, new JsonSerializerSettings {ContractResolver =  new CamelCasePropertyNamesContractResolver()});
+            form.Fields = json;
+            _db.SaveChanges();
+            return ResultUtil.Success();
         }
         #endregion
     }

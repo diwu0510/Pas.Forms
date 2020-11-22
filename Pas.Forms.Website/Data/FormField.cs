@@ -97,4 +97,56 @@ namespace Pas.Forms.Website.Data
         /// </summary>
         public string Params { get; set; }
     }
+
+    public class FormField2
+    {
+        public string Table { get; set; }
+
+        public string Field { get; set; }
+
+        public string Type { get; set; }
+
+        public FormFieldSpan Span { get; set; }
+
+        public string Name { get; set; }
+
+        public string Label { get; set; }
+
+        public string PlaceHolder { get; set; }
+
+        public bool Required { get; set; }
+
+        public bool ReadOnly { get; set; }
+
+        public string DefaultValue { get; set; }
+
+        public string Options { get; set; }
+
+        public DataSourceType DataSourceType { get; set; }
+
+        public string DataSource { get; set; }
+
+        public string ValueProperty { get; set; }
+
+        public string TextProperty { get; set; }
+
+        public string ParamListJson { get; set; }
+
+        /// <summary>
+        /// 数据源字段与表单项名称（输入框之类的名称）的映射列表
+        /// </summary>
+        public string MapListJson { get; set; }
+    }
+
+    public enum FormFieldSpan
+    {
+        Full = 1,
+        Half = 2
+    }
+
+    public enum DataSourceType
+    {
+        DataSource = 1,
+        Dictionary = 2
+    }
 }
