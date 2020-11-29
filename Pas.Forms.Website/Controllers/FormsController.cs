@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Pas.Forms.Website.Models.Forms;
 
 namespace Pas.Forms.Website.Controllers
 {
@@ -172,10 +173,38 @@ namespace Pas.Forms.Website.Controllers
                 return ResultUtil.NotFound();
             }
 
-            var json = JsonConvert.SerializeObject(fields, new JsonSerializerSettings {ContractResolver =  new CamelCasePropertyNamesContractResolver()});
+            var json = JsonConvert.SerializeObject(
+                fields, 
+                new JsonSerializerSettings
+                {
+                    ContractResolver =  new CamelCasePropertyNamesContractResolver()
+                });
             form.Fields = json;
             _db.SaveChanges();
             return ResultUtil.Success();
+        }
+        #endregion
+        
+        #region 预览
+
+        public IActionResult Preview(int id)
+        {
+            var form = _db.Find<Form>(id);
+            if (form == null)
+            {
+                return NotFound();
+            }
+
+            return View(form);
+        }
+
+        /// <summary>
+        /// 获取所有可用的表单配置JSON
+        /// </summary>
+        /// <returns></returns>
+        public IActionResult GetDescriptors()
+        {
+            return Json(FormFieldFactory.GetFormFieldDescriptors());
         }
         #endregion
     }
